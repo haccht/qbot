@@ -1,6 +1,3 @@
-require 'timers'
-require 'parse-cron'
-
 class Cron < Qbot::Base
 
   on /^cron add (\S+ \S+ \S+ \S+ \S+) (.+)$/ do |msg|
@@ -17,11 +14,10 @@ class Cron < Qbot::Base
 
   usage <<~EOL
   Usage:
-    `cron add <cron-syntax> <message>` - add a cron scheduler.
-    `cron del <cron-id>` - delete the cron schduler.
-    `cron list` - list all cron schedulers.
+    `cron add <pattern> <message>` - add a cron task.
+    `cron del <cron-id>`           - remove a cron task.
+    `cron list`                    - list all cron tasks.
   EOL
-
 
   class << self
 
@@ -32,49 +28,45 @@ class Cron < Qbot::Base
   end
 
   def start(id, cron, text)
-    begin
-      recursive(id, cron, text)
-    rescue ArgumentError
-      return
-    end
+    schedule(id, cron, text) rescue return
 
     cache[id] = [cron, text]
-    post("ADD " + line(id, cron, text))
+    post("ADD " + dump(id, cron, text))
   end
 
   def stop(id)
     Cron.timers[id].cancel if Cron.timers[id]
-    return unless cache[id]
-
     cron, text = cache[id]
+    return unless cron && text
+
     cache[id]  = nil
-    post("DEL " + line(id, cron, text))
+    post("DEL " + dump(id, cron, text))
   end
 
   def list
     resp = StringIO.new
     cache.each do |id, (cron, text)|
       next unless cron && text
-      resp.puts line(id, cron, text)
+      resp.puts dump(id, cron, text)
     end
 
     post(resp.string)
   end
 
   private
-  def recursive(id, cron, text)
+  def schedule(id, cron, text)
     parser  = CronParser.new(cron)
     current = Time.now
     delay   = parser.next(current) - current
 
     Cron.timers[id] = Qbot.app.timers.after(delay) do
       post(text)
-      recursive(id, cron, text)
+      schedule(id, cron, text)
     end
   end
 
-  def line(id, cron, text)
-    "#{id.to_s.rjust(3)}: #{cron} #{text}"
+  def dump(id, cron, text)
+    "#{id.to_s.rjust(3, '0')}: #{cron} #{text}"
   end
 
   def unique_id

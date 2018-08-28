@@ -1,3 +1,6 @@
+require 'timers'
+require 'parse-cron'
+
 require 'qbot/app'
 require 'qbot/adapter'
 require 'qbot/storage'
@@ -13,6 +16,10 @@ module Qbot
         Qbot.app.bots.push(new(pattern, &block))
       end
 
+      def cron(pattern, &block)
+        schedule(pattern, &block)
+      end
+
       def usage(text)
         on(/^#{prefix}help\s+#{name.downcase}\b/) { post(text) }
       end
@@ -20,6 +27,17 @@ module Qbot
       private
       def prefix
         "#{ENV['QBOT_PREFIX']}\s+" if ENV['QBOT_PREFIX']
+      end
+
+      def schedule(pattern, &block)
+        parser  = CronParser.new(pattern)
+        current = Time.now
+        delay   = parser.next(current) - current
+
+        Qbot.app.timers.after(delay) do
+          new(pattern).instance_eval(&block)
+          schedule(pattern, &block)
+        end
       end
 
     end

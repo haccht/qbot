@@ -12,7 +12,7 @@ module Qbot
         end
       end
     end
-    delegate :on
+    delegate :on, :cron
 
   end
 
