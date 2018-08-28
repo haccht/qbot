@@ -1,5 +1,5 @@
-require 'Qbot/base'
-require 'Qbot/autorun'
+require 'qbot/base'
+require 'qbot/autorun'
 
 module Qbot
 
@@ -8,7 +8,7 @@ module Qbot
     def self.delegate(*names)
       names.each do |name|
         define_method(name) do |*args, &block|
-          MSbot::Base.send(name, *args, &block)
+          Qbot::Base.send(name, *args, &block)
         end
       end
     end
@@ -18,4 +18,4 @@ module Qbot
 
 end
 
-extend MSbot::Delegator
+extend Qbot::Delegator

@@ -1,4 +1,6 @@
-require 'optparse'
+require 'qbot/adapter/shell'
+require 'qbot/storage/memory'
+require 'qbot/embed/help'
 
 module Qbot
 

@@ -1,4 +1,6 @@
 require 'qbot/app'
+require 'qbot/adapter'
+require 'qbot/storage'
 
 module Qbot
 
@@ -43,10 +45,3 @@ module Qbot
   end
 
 end
-
-require 'qbot/adapter'
-require 'qbot/adapter/shell'
-require 'qbot/storage'
-require 'qbot/storage/memory'
-require 'qbot/embed/help'
-require 'qbot/version'

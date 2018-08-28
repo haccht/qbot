@@ -1,6 +1,8 @@
 require 'singleton'
 require 'timers'
 
+require 'qbot/version'
+
 module Qbot
 
   def self.app
@@ -19,10 +21,10 @@ module Qbot
     end
 
     def run(*args)
-      th1 = Thread.start { loop { @timers.wait } }
-      th2 = Thread.start { adapter.run(bots) }
-
-      [th1, th2].each { |th| th.join }
+      [
+        Thread.start { loop { @timers.wait } },
+        Thread.start { adapter.run(bots) },
+      ].each { |th| th.join }
     end
 
     def adapter
