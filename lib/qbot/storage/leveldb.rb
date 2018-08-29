@@ -14,7 +14,7 @@ module Qbot
         database = ENV['QBOT_LEVELDB_DATABASE']        || QBOT_LEVELDB_DEFAULT_DATABASE
 
         @db = ::LevelDB::DB.new(File.join(Dir.pwd, database))
-        @cache = restore
+        @cache = restore || {}
 
         Qbot.app.timers.every(interval) { backup }
       end
