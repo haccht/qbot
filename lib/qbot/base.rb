@@ -2,7 +2,9 @@ require 'parse-cron'
 require 'timers'
 require 'qbot/app'
 require 'qbot/adapter'
+require 'qbot/adapter/shell'
 require 'qbot/storage'
+require 'qbot/storage/memory'
 
 module Qbot
 
