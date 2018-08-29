@@ -12,7 +12,7 @@ module Qbot
         Signal.trap(signal) { exit }
       end
 
-      Qbot.app.run(ARGV)
+      Qbot.run(ARGV)
     end
   end
 

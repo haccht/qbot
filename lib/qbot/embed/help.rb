@@ -1,17 +1,22 @@
 require 'stringio'
 
-class Help < Qbot::Base
-  on /^#{prefix}help$/ do
-    names = Qbot.app.bots
-      .map    { |n| n.class.name.split('::').last.downcase }
-      .reject { |n| %w(base help).include?(n) }
-      .uniq
+module Qbot
 
-    next if names.empty?
-    resp = StringIO.new
-    resp.puts 'Features:'
-    resp.puts names.map { |name| "  #{name}" }
+  class Help < Qbot::Base
 
-    post resp.string
+    on /^#{prefix}help$/ do
+      names = Qbot.app.bots
+        .reject { |n| %w(Qbot::Base Qbot::Help).include?(n) }
+        .map    { |n| n.split('::').last.downcase }
+
+      next if names.empty?
+      resp = StringIO.new
+      resp.puts 'Features:'
+      resp.puts names.map { |name| "  #{name}" }
+
+      post resp.string
+    end
+
   end
+
 end

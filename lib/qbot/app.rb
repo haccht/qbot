@@ -1,30 +1,48 @@
 require 'singleton'
 require 'timers'
-
 require 'qbot/version'
 
 module Qbot
 
-  def self.app
-    Qbot::Application.instance
+  class << self
+
+    def app
+      Qbot::Application.instance
+    end
+
+    def run(*args)
+      app.start
+    end
+
   end
 
   class Application
 
     include Singleton
-    attr_reader :bots
     attr_reader :timers
 
     def initialize
-      @bots   = []
-      @timers = Timers::Group.new
+      @bots    = []
+      @threads = []
+      @timers  = Timers::Group.new
     end
 
-    def run(*args)
-      [
-        Thread.start { loop { @timers.wait } },
-        Thread.start { adapter.run(bots) },
-      ].each { |th| th.join }
+    def add(bot)
+      @bots << bot
+    end
+
+    def bots
+      @bots.map { |bot| bot.class.name }.uniq
+    end
+
+    def start
+      @threads << Thread.start { loop { @timers.wait } }
+      @threads << Thread.start { adapter.run(@bots) }
+      @threads.each { |th| th.join }
+    end
+
+    def stop
+      @threads.each { |th| th.kill }
     end
 
     def adapter

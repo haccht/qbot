@@ -1,6 +1,5 @@
-require 'timers'
 require 'parse-cron'
-
+require 'timers'
 require 'qbot/app'
 require 'qbot/adapter'
 require 'qbot/storage'
@@ -13,7 +12,7 @@ module Qbot
 
       def on(pattern, &block)
         pattern = Regexp.new(pattern.to_s) unless Regexp === pattern
-        Qbot.app.bots.push(new(pattern, &block))
+        Qbot.app.add(new(pattern, &block))
       end
 
       def cron(pattern, &block)
