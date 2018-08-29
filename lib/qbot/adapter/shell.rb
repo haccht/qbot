@@ -2,31 +2,35 @@ require 'eventmachine'
 
 module Qbot
 
-  class ShellAdapter < Qbot::Adapter
+  module Adapter
 
-    module Keyboard
+    class Shell < Qbot::Adapter::Driver
 
-      include EM::Protocols::LineText2
+      module Keyboard
 
-      def initialize(callback)
-        @callback = callback
-        $stdout.print ">> "
+        include EM::Protocols::LineText2
+
+        def initialize(callback)
+          @callback = callback
+          $stdout.print ">> "
+        end
+
+        def receive_line(message)
+          exit 0 if message.strip == 'exit'
+
+          @callback.call(message)
+          $stdout.print ">> "
+        end
       end
 
-      def receive_line(message)
-        exit 0 if message.strip == 'exit'
-
-        @callback.call(message)
-        $stdout.print ">> "
+      def on_message(&block)
+        EM.run { EM.open_keyboard(Keyboard, block) }
       end
-    end
 
-    def on_message(&block)
-      EM.run { EM.open_keyboard(Keyboard, block) }
-    end
+      def post(message, **opts)
+        $stdout.puts message
+      end
 
-    def post(message, **opts)
-      $stdout.puts message
     end
 
   end

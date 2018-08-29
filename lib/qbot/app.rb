@@ -46,11 +46,11 @@ module Qbot
     end
 
     def adapter
-      @adapter ||= Qbot::Adapter.build
+      @adapter ||= Qbot::Adapter::Driver.build
     end
 
     def storage
-      @storage ||= Qbot::Storage.build
+      @storage ||= Qbot::Storage::Driver.build
     end
 
   end

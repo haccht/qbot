@@ -1,16 +1,19 @@
 module Qbot
 
-  class MemoryStorage < Storage
+  module Storage
 
-    def initialize
-      @db = Hash.new { |h, k| h[k] = {} }
-    end
+    class Memory < Qbot::Storage::Driver
 
-    def namespace(namespace)
-      @db[namespace]
+      def initialize
+        @db = Hash.new { |h, k| h[k] = {} }
+      end
+
+      def namespace(ns)
+        @db[ns]
+      end
+
     end
 
   end
 
 end
-

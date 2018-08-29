@@ -1,31 +1,35 @@
 module Qbot
 
-  class Adapter
+  module Adapter
 
-    class << self
+    class Driver
 
-      def inherited(subclass)
-        @target = subclass
+      class << self
+
+        def inherited(subclass)
+          @target = subclass
+        end
+
+        def build
+          @target.new
+        end
+
       end
 
-      def build
-        @target.new
+      def run(bots)
+        on_message do |message|
+          bots.each { |bot| bot.call(message) }
+        end
       end
 
-    end
-
-    def run(bots)
-      on_message do |message|
-        bots.each { |bot| bot.call(message) }
+      def post(message, **opts)
+        raise 'Not implemented'
       end
-    end
 
-    def post(message, **opts)
-      raise 'Not implemented'
-    end
+      def on_message(&block)
+        raise 'Not implemented'
+      end
 
-    def on_message(&block)
-      raise 'Not implemented'
     end
 
   end
