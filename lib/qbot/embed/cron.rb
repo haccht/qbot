@@ -3,22 +3,22 @@ module Qbot
   class Cron < Qbot::Base
 
     on /^cron add (\S+ \S+ \S+ \S+ \S+) (.+)$/ do |msg|
-      start(unique_id, msg[1], msg[2])
+      start(unique_id, msg.matched[1], msg.matched[2])
     end
 
     on /^cron del (\d+)/ do |msg|
-      stop(msg[1].to_i)
+      stop(msg.matched[1].to_i)
     end
 
-    on /^cron list\b/ do |msg|
+    on /^cron list\b/ do
       list
     end
 
     usage <<~EOL
-  Usage:
-    `cron add <pattern> <message>` - add a cron task.
-    `cron del <cron-id>`           - remove a cron task.
-    `cron list`                    - list all cron tasks.
+    Usage:
+      `cron add <pattern> <message>` - add a cron task.
+      `cron del <cron-id>`           - remove a cron task.
+      `cron list`                    - list all cron tasks.
     EOL
 
     def self.timers

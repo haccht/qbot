@@ -1,5 +1,6 @@
 require 'singleton'
 require 'timers'
+
 require 'qbot/version'
 
 module Qbot
