@@ -13,7 +13,7 @@ module Qbot
         interval = ENV['QBOT_LEVELDB_BACKUP_INTERVAL'] || QBOT_LEVELDB_DEFAULT_BACKUP_INTERVAL
         database = ENV['QBOT_LEVELDB_DATABASE']        || QBOT_LEVELDB_DEFAULT_DATABASE
 
-        @db = LevelDB::DB.new(File.join(Dir.pwd, database))
+        @db = ::LevelDB::DB.new(File.join(Dir.pwd, database))
         @cache = restore
 
         Qbot.app.timers.every(interval) { backup }
