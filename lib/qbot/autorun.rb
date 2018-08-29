@@ -1,5 +1,3 @@
-require 'qbot/adapter/shell'
-require 'qbot/storage/memory'
 require 'qbot/embed/help'
 
 module Qbot
@@ -12,7 +10,7 @@ module Qbot
         Signal.trap(signal) { exit }
       end
 
-      Qbot.run(ARGV)
+      Qbot.run!(ARGV)
     end
   end
 

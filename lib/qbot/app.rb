@@ -10,7 +10,7 @@ module Qbot
       Qbot::Application.instance
     end
 
-    def run(*args)
+    def run!(*args)
       app.start
     end
 

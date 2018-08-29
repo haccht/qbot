@@ -6,7 +6,7 @@ module Qbot
 
     class LevelDB < Qbot::Storage::Driver
 
-      QBOT_LEVELDB_DEFAULT_DATABASE = 'qbot.db'
+      QBOT_LEVELDB_DEFAULT_DATABASE = 'qbot-storage.db'
       QBOT_LEVELDB_DEFAULT_BACKUP_INTERVAL = 5
 
       def initialize
@@ -14,32 +14,27 @@ module Qbot
         database = ENV['QBOT_LEVELDB_DATABASE']        || QBOT_LEVELDB_DEFAULT_DATABASE
 
         @db = ::LevelDB::DB.new(File.join(Dir.pwd, database))
-        @cache = restore || {}
+        @cache = {}
 
+        restore
         Qbot.app.timers.every(interval) { backup }
       end
 
       def namespace(ns)
-        @cache[ns]
+        @cache[ns] ||= {}
       end
 
       private
       def backup
-        return @cache.keys.empty?
+        return if @cache.keys.empty?
         @db.batch do |batch|
-          @cache.each do |ns, v|
-            batch[ns] = Marshal.dump(v)
-          end
+          @cache.each { |ns, v| batch[ns] = Marshal.dump(v) }
         end
       end
 
       def restore
-        return @db.keys.empty?
-        @db.batch do |batch|
-          batch.each do |ns, v|
-            @cache[ns] = Marshal.load(v)
-          end
-        end
+        return if @db.keys.empty?
+        @db.each { |ns, v| @cache[ns] = Marshal.load(v) }
       end
 
     end
