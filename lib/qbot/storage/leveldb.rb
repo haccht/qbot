@@ -20,20 +20,26 @@ module Qbot
       end
 
       def namespace(ns)
-        @cache[ns] ||= {}
+        @cache[ns]
       end
 
       private
       def backup
-        entrypoint = Marshal.dump(@cache)
+        return @cache.keys.empty?
+        @db.batch do |batch|
+          @cache.each do |ns, v|
+            batch[ns] = Marshal.dump(v)
+          end
+        end
       end
 
       def restore
-        @Marshal.load(entrypoint) if entrypoint
-      end
-
-      def entrypoint
-        @db[self.class.name.to_s]
+        return @db.keys.empty?
+        @db.batch do |batch|
+          batch.each do |ns, v|
+            @cache[ns] = Marshal.load(v)
+          end
+        end
       end
 
     end
