@@ -1,5 +1,7 @@
+require 'faraday'
+require 'faraday_middleware'
+require 'faye/websocket'
 require 'json'
-require 'mattermost'
 
 module Qbot
 
@@ -7,49 +9,108 @@ module Qbot
 
     class Mattermost < Qbot::Adapter::Driver
 
-      def initialize
-        server   = ENV['QBOT_MATTERMOST_URI']
-        username = ENV['QBOT_MATTERMOST_USERNAME']
-        password = ENV['QBOT_MATTERMOST_PASSWORD']
-        raise "#{self.class}: Argument Error" unless server && username && password
+      def initialize(url: nil, username: nil, password: nil)
+        @mm_url  = url || ENV['QBOT_MATTERMOST_URL']
+        @server  = URI.join(@mm_url, '/').to_s
+        @token   = nil
 
-        @client = ::Mattermost::Client.new(server)
-        @client.login(username, password)
+        resp = request(:post, '/users/login', :body => {
+          login_id: username || ENV['QBOT_MATTERMOST_USERNAME'],
+          password: password || ENV['QBOT_MATTERMOST_PASSWORD'],
+        })
 
-        @client.connected?
-        @client.connect_websocket.connected?
+        access_token(resp.headers['token'])
+      end
+
+      def access_token(token)
+        @token = token
       end
 
       def on_message(&block)
-        @client.ws_client.on :message do |json|
-          data = JSON.load(data)
+        seq = 0
+        ws_url = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
+        headers = { "Authorization" => "Bearer #{@token}" }
 
-          message = Qbot::Message.new
-          message.data = data
-          message.text = data['message']
+        EM.run do
+          @ws = Faye::WebSocket::Client.new(ws_url, {}, { headers: headers, ping: 60})
 
-          block.call(message)
+          @ws.on :open do |e|
+            $stderr.puts 'ws open'
+          end
+
+          @ws.on :close do |e|
+            $stderr.puts "ws close: #{e.reason}"
+          end
+
+          @ws.on :error do |e|
+            $stderr.puts "ws error: #{e.message}"
+          end
+
+          @ws.on :message do |e|
+            data = JSON.parse(e.data)
+            seq = data["seq"] if data["seq"] && seq < data["seq"]
+
+            $stderr.puts "recieved #{data['event']}"
+            case event = data['event'].to_sym
+            when :posted
+              post = JSON.parse(data['data']['post'])
+              $stderr.puts "recieved message: #{post['message']}"
+
+              message = Qbot::Message.new
+              message.data = post
+              message.text = post['message']
+
+              block.call(message)
+            end
+          end
         end
       end
 
+      def stop
+        EM.stop
+      end
+
       def post(text, **opts)
-        channel_id = opts[:channel_id] || channel_id(opts[:channel])
-        @client.create_post({message: text, channel_id: channel_id})
+        request(:post, "/posts", :body => {
+          message:    text,
+          channel_id: opts[:channel_id] || channel(opts[:channel])['id'],
+        })
       end
 
       private
-      def channel_id(name)
-        resp = @client.get_channel_by_name(team_id, name)
-        resp.body['id']
+      def endpoint(path)
+        URI(@mm_url).path + "/api/v4#{path}"
       end
 
-      def team_id
+      def request(method, path, **options, &block)
+        headers = { "Authorization" => "Bearer #{@token}", "Accept" => "application/json" }
+        connection = Faraday::Connection.new(url: @server, headers: headers ) do |con|
+          con.response :json
+          con.adapter  :httpclient
+        end
+
+        connection.send(method) do |request|
+          request.url endpoint(path), options
+          request.body = options[:body].to_json if options[:body]
+        end
+      end
+
+      def me
+        request(:get, "/users/me")
+      end
+
+      def channel(name)
+        resp = request(:get, "/teams/#{team['id']}/channels/name/#{name}")
+        resp.body
+      end
+
+      def team
         if name = ENV['QBOT_MATTERMOST_TEAM']
-          resp = @client.get_team_by_name(name)
-          resp.body['id']
+          resp = request(:get, "/teams/name/#{name}")
+          resp.body
         else
-          resp = @client.get_teams_for_user(ENV['QBOT_MATTERMOST_USERNAME'])
-          resp.body[0]['id']
+          resp = request(:get, "/users/#{me['id']}/teams")
+          resp.body.first
         end
       end
 
