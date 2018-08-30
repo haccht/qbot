@@ -1,5 +1,7 @@
 module Qbot
 
+  Message = Struct.new(:text, :data, :matched)
+
   module Adapter
 
     class Driver
@@ -18,7 +20,7 @@ module Qbot
 
       def run(bots)
         on_message do |message|
-          bots.each { |bot| bot.call(message) }
+          bots.each { |bot| bot.call(message.dup) }
         end
       end
 

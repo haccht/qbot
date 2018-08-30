@@ -15,8 +15,12 @@ module Qbot
           $stdout.print ">> "
         end
 
-        def receive_line(message)
-          exit 0 if message.strip == 'exit'
+        def receive_line(text)
+          exit 0 if text.strip == 'exit'
+
+          message = Qbot::Message.new
+          message.data = text
+          message.text = text
 
           @callback.call(message)
           $stdout.print ">> "

@@ -1,5 +1,6 @@
 require 'parse-cron'
-require 'timers'
+require 'dotenv/load'
+
 require 'qbot/app'
 require 'qbot/adapter'
 require 'qbot/adapter/shell'
@@ -49,8 +50,10 @@ module Qbot
     end
 
     def call(message)
-      return unless @pattern =~ message.to_s.strip
-      instance_exec($~, &@callback)
+      message.matched = @pattern.match(message.text.to_s.strip)
+      return unless message.matched
+
+      instance_exec(message, &@callback)
     end
 
     def post(message, **options)
