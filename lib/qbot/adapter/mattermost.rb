@@ -15,7 +15,7 @@ module Qbot
         @token   = nil
         @error   = false
 
-        resp = request(:post, '/users/login', :body => {
+        resp = api_call(:post, '/users/login', :body => {
           login_id: username || ENV['QBOT_MATTERMOST_USERNAME'],
           password: password || ENV['QBOT_MATTERMOST_PASSWORD'],
         })
@@ -61,12 +61,17 @@ module Qbot
       end
 
       def reply_to(message, text, **options)
-        channel_id = options[:channel_id]
-        channel_id ||= channel(options[:channel])['id'] if options[:channel]
-        channel_id ||= message.data['channel_id']
+        if options[:channel_id]
+          channel_id = options[:channel_id]
+        elsif options[:channel_name]
+          channel = channel(options[:channel_name])
+          channel_id = channel['id'] if channel
+        end
+
+        channel_id ||= message.data['channel_id'] if message
         return unless channel_id
 
-        request(:post, "/posts", :body => {
+        api_call(:post, "/posts", :body => {
           message:    text,
           channel_id: channel_id
         })
@@ -89,13 +94,14 @@ module Qbot
           message.data = post
           message.text = post['message']
 
-          Qbot.app.logger.info("#{self.class} - Message was '#{post['message']}'")
+          Qbot.app.logger.info("#{self.class} - Message was '#{message.text}'")
           callback.call(message)
         end
       end
 
-      def request(method, path, **options, &block)
+      def api_call(method, path, **options, &block)
         headers = { "Authorization" => "Bearer #{@token}", "Accept" => "application/json" }
+
         connection = Faraday::Connection.new(url: @server, headers: headers ) do |con|
           con.response :json
           con.adapter  :httpclient
@@ -108,20 +114,21 @@ module Qbot
       end
 
       def me
-        request(:get, "/users/me")
+        resp = api_call(:get, "/users/me")
+        resp.body
       end
 
       def channel(name)
-        resp = request(:get, "/teams/#{team['id']}/channels/name/#{name}")
+        resp = api_call(:get, "/teams/#{team['id']}/channels/name/#{name}")
         resp.body
       end
 
       def team
         if name = ENV['QBOT_MATTERMOST_TEAM']
-          resp = request(:get, "/teams/name/#{name}")
+          resp = api_call(:get, "/teams/name/#{name}")
           resp.body
         else
-          resp = request(:get, "/users/#{me['id']}/teams")
+          resp = api_call(:get, "/users/#{me['id']}/teams")
           resp.body.first
         end
       end
