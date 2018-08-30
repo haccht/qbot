@@ -50,14 +50,14 @@ module Qbot
     end
 
     def call(message)
-      message.matched = @pattern.match(message.text.to_s.strip)
-      return unless message.matched
+      @message = message
+      return unless @pattern =~ @message.text.to_s.strip
 
-      instance_exec(message, &@callback)
+      instance_exec($~, &@callback)
     end
 
-    def post(message, **options)
-      Qbot.app.adapter.post(message, **options)
+    def post(text, **options)
+      Qbot.app.adapter.reply_to(@message, text, **options)
     end
 
     def cache

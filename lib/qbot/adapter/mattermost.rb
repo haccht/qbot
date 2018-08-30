@@ -13,6 +13,7 @@ module Qbot
         @mm_url  = url || ENV['QBOT_MATTERMOST_URL']
         @server  = URI.join(@mm_url, '/').to_s
         @token   = nil
+        @error   = false
 
         resp = request(:post, '/users/login', :body => {
           login_id: username || ENV['QBOT_MATTERMOST_USERNAME'],
@@ -27,7 +28,6 @@ module Qbot
       end
 
       def on_message(&block)
-        seq = 0
         ws_url = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
         headers = { "Authorization" => "Bearer #{@token}" }
 
@@ -35,33 +35,23 @@ module Qbot
           @ws = Faye::WebSocket::Client.new(ws_url, {}, { headers: headers, ping: 60})
 
           @ws.on :open do |e|
-            $stderr.puts 'ws open'
+            Qbot.app.logger.info("#{self.class} - Websocket connection opened")
           end
 
           @ws.on :close do |e|
-            $stderr.puts "ws close: #{e.reason}"
+            Qbot.app.logger.info("#{self.class} - Websocket connection closed")
+            stop if @error
+            on_message(&block) # restart
           end
 
           @ws.on :error do |e|
-            $stderr.puts "ws error: #{e.message}"
+            Qbot.app.logger.error("#{self.class} - #{e.message}")
+            @error = true
           end
 
           @ws.on :message do |e|
             data = JSON.parse(e.data)
-            seq = data["seq"] if data["seq"] && seq < data["seq"]
-
-            $stderr.puts "recieved #{data['event']}"
-            case event = data['event'].to_sym
-            when :posted
-              post = JSON.parse(data['data']['post'])
-              $stderr.puts "recieved message: #{post['message']}"
-
-              message = Qbot::Message.new
-              message.data = post
-              message.text = post['message']
-
-              block.call(message)
-            end
+            emit_event(data, block)
           end
         end
       end
@@ -70,16 +60,38 @@ module Qbot
         EM.stop
       end
 
-      def post(text, **opts)
+      def reply_to(message, text, **options)
+        channel_id = options[:channel_id]
+        channel_id ||= channel(options[:channel])['id'] if options[:channel]
+        channel_id ||= message.data['channel_id']
+        return unless channel_id
+
         request(:post, "/posts", :body => {
           message:    text,
-          channel_id: opts[:channel_id] || channel(opts[:channel])['id'],
+          channel_id: channel_id
         })
       end
 
       private
       def endpoint(path)
         URI(@mm_url).path + "/api/v4#{path}"
+      end
+
+      def emit_event(data, callback)
+        event = data['event'].to_sym
+        Qbot.app.logger.debug("#{self.class} - Event '#{event}' recieved")
+
+        case event
+        when :posted
+          post = JSON.parse(data['data']['post'])
+
+          message = Qbot::Message.new
+          message.data = post
+          message.text = post['message']
+
+          Qbot.app.logger.info("#{self.class} - Message was '#{post['message']}'")
+          callback.call(message)
+        end
       end
 
       def request(method, path, **options, &block)

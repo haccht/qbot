@@ -24,7 +24,7 @@ module Qbot
         end
       end
 
-      def post(message, **opts)
+      def reply_to(message, text, **options)
         raise 'Not implemented'
       end
 

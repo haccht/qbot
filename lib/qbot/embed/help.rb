@@ -4,7 +4,7 @@ module Qbot
 
   class Help < Qbot::Base
 
-    on /^#{prefix}help$/ do
+    on /^#{prefix}help$/ do |msg|
       names = Qbot.app.bots
         .reject { |n| %w(Qbot::Base Qbot::Help).include?(n) }
         .map    { |n| n.split('::').last.downcase }

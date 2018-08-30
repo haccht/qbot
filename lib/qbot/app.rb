@@ -1,3 +1,4 @@
+require 'logger'
 require 'singleton'
 require 'timers'
 
@@ -21,11 +22,13 @@ module Qbot
 
     include Singleton
     attr_reader :timers
+    attr_reader :logger
 
     def initialize
       @bots    = []
       @threads = []
       @timers  = Timers::Group.new
+      @logger  = Logger.new(STDOUT)
     end
 
     def add(bot)
@@ -37,6 +40,10 @@ module Qbot
     end
 
     def start
+      @logger.info("Booting #{self.class}.")
+      @logger.info("#{storage.class} - Storage driver loaded")
+      @logger.info("#{adapter.class} - Adapter driver loaded")
+
       @threads << Thread.start { loop { @timers.wait } }
       @threads << Thread.start { adapter.run(@bots) }
       @threads.each { |th| th.join }

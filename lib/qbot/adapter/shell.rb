@@ -31,8 +31,8 @@ module Qbot
         EM.run { EM.open_keyboard(Keyboard, block) }
       end
 
-      def post(message, **opts)
-        $stdout.puts message
+      def reply_to(message, text, **options)
+        $stdout.puts text
       end
 
     end

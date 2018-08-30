@@ -3,7 +3,7 @@ module Qbot
   class Echo < Qbot::Base
 
     on /^echo( .+)$/ do |msg|
-      post(msg.matched[1].strip)
+      post msg[1].strip
     end
 
     usage <<~EOL

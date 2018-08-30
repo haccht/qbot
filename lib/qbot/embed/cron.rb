@@ -3,15 +3,15 @@ module Qbot
   class Cron < Qbot::Base
 
     on /^cron add (\S+ \S+ \S+ \S+ \S+) (.+)$/ do |msg|
-      start(unique_id, msg.matched[1], msg.matched[2])
+      post start(unique_id, msg[1], msg[2])
     end
 
     on /^cron del (\d+)/ do |msg|
-      stop(msg.matched[1].to_i)
+      post stop(msg[1].to_i)
     end
 
-    on /^cron list\b/ do
-      list
+    on /^cron list\b/ do |msg|
+      post list_all
     end
 
     usage <<~EOL
@@ -29,7 +29,7 @@ module Qbot
       schedule(id, cron, text) rescue return
 
       cache[id] = [cron, text]
-      post("ADD " + dump_line(id, cron, text))
+      "ADD " + dump_line(id, cron, text)
     end
 
     def stop(id)
@@ -38,17 +38,17 @@ module Qbot
       return unless cron && text
 
       cache[id]  = nil
-      post("DEL " + dump_line(id, cron, text))
+      "DEL " + dump_line(id, cron, text)
     end
 
-    def list
+    def list_all
       resp = StringIO.new
       cache.each do |id, (cron, text)|
         next unless cron && text
         resp.puts dump_line(id, cron, text)
       end
 
-      post(resp.string)
+      resp.string
     end
 
     private
