@@ -43,7 +43,7 @@ end
 Then put your Slack API Token in `.env`.
 
 ```
-QBOT_SLACK_API_TOKEN=xoxb-############-#######################C
+QBOT_SLACK_API_TOKEN=xoxb-############-########################
 ```
 
 And now start your bot with the following command.
