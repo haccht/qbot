@@ -36,7 +36,7 @@ on /^echo (.+)$/ do |msg|
 end
 
 cron '*/5 * * * *' do
-  post 'hello?', channel_name: 'randome'
+  post 'hello?', channel_name: 'random'
 end
 ```
 
