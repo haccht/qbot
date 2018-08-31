@@ -1,8 +1,7 @@
 # Qbot
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/qbot`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Qbot is a tiny bot flamework written in Ruby.  
+Qbot comes with the Slack adapter and the Mattermost adapter.
 
 ## Installation
 
@@ -22,7 +21,37 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Write your bot in `bot.rb`.
+
+```
+require 'qbot'
+require 'qbot/adapter/slack'
+
+on /^ping/ do
+  post 'pong'
+end
+
+on /^echo (.+)$/ do |msg|
+  post msg[1]
+end
+
+cron '*/5 * * * *' do
+  post 'hello?', channel_name: 'randome'
+end
+```
+
+Then put your Slack API Token in `.env`.
+
+```
+QBOT_SLACK_API_TOKEN=xoxb-############-#######################C
+```
+
+And now start your bot with the following command.
+
+```
+ruby bot.rb
+```
+
 
 ## Development
 
