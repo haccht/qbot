@@ -50,7 +50,8 @@ module Qbot
     end
 
     def stop
-      @threads.each { |th| th.kill }
+      adapter.stop if adapter.respond_to?(:stop)
+      @threads.each { |th| th.kill if th }
     end
 
     def adapter

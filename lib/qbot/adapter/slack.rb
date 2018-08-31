@@ -13,12 +13,9 @@ module Qbot
 
       def initialize(api_token: nil)
         @server = URI.join(SLACK_API_URL, '/').to_s
-        @token  = api_token || ENV['QBOT_SLACK_API_TOKEN']
         @error  = false
 
-        resp = api_call(:get, '/rtm.start')
-        data = JSON.parse(resp.body)
-        @ws_url = data['url']
+        access_token(api_token || ENV['QBOT_SLACK_API_TOKEN'])
       end
 
       def access_token(token)
@@ -26,8 +23,12 @@ module Qbot
       end
 
       def on_message(&block)
+        resp = api_call(:get, '/rtm.start')
+        data = JSON.parse(resp.body)
+        ws_url = data['url']
+
         EM.run do
-          @ws = Faye::WebSocket::Client.new(@ws_url, {}, { ping: 60})
+          @ws = Faye::WebSocket::Client.new(ws_url, {}, { ping: 60})
 
           @ws.on :open do |e|
             Qbot.app.logger.info("#{self.class} - Websocket connection opened")
@@ -55,6 +56,10 @@ module Qbot
         EM.stop
       end
 
+      def post(text, **options)
+        api_call(:post, "/chat.postMessage", options.merge(text: text))
+      end
+
       def reply_to(message, text, **options)
         if options[:channel_id]
           channel_id = options[:channel_id]
@@ -66,10 +71,7 @@ module Qbot
         channel_id ||= message.data['channel'] if message
         return unless channel_id
 
-        api_call(:post, "/chat.postMessage", {
-          text:    text,
-          channel: channel_id
-        })
+        post(text, **options.merge(channel: channel_id))
       end
 
       private
@@ -100,7 +102,11 @@ module Qbot
           con.adapter :httpclient
         end
 
-        connection.send(method, endpoint(path), { token: @token }.merge(options))
+        connection.send(
+          method,
+          endpoint(path),
+          { token: @token }.merge(options)
+        )
       end
 
       def me

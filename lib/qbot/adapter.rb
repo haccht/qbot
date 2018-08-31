@@ -24,11 +24,15 @@ module Qbot
         end
       end
 
-      def reply_to(message, text, **options)
+      def on_message(&block)
         raise 'Not implemented'
       end
 
-      def on_message(&block)
+      def post(text, **options)
+        raise 'Not implemented'
+      end
+
+      def reply_to(message, text, **options)
         raise 'Not implemented'
       end
 

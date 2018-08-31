@@ -10,10 +10,9 @@ module Qbot
     class Mattermost < Qbot::Adapter::Driver
 
       def initialize(url: nil, username: nil, password: nil)
-        @mm_url  = url || ENV['QBOT_MATTERMOST_URL']
-        @server  = URI.join(@mm_url, '/').to_s
-        @token   = nil
-        @error   = false
+        @mm_url = url || ENV['QBOT_MATTERMOST_URL']
+        @server = URI.join(@mm_url, '/').to_s
+        @error  = false
 
         resp = api_call(:post, '/users/login', :body => {
           login_id: username || ENV['QBOT_MATTERMOST_USERNAME'],
@@ -60,6 +59,10 @@ module Qbot
         EM.stop
       end
 
+      def post(text, **options)
+        api_call(:post, "/posts", body: options.merge(message: text))
+      end
+
       def reply_to(message, text, **options)
         if options[:channel_id]
           channel_id = options[:channel_id]
@@ -71,10 +74,7 @@ module Qbot
         channel_id ||= message.data['channel_id'] if message
         return unless channel_id
 
-        api_call(:post, "/posts", :body => {
-          message:    text,
-          channel_id: channel_id
-        })
+        post(text, **options.merge(channel_id: channel_id))
       end
 
       private
