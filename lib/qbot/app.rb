@@ -41,16 +41,18 @@ module Qbot
 
     def start
       @logger.info("Booting #{self.class}.")
-      @logger.info("#{storage.class} - Storage driver loaded")
-      @logger.info("#{adapter.class} - Adapter driver loaded")
+      @logger.info("#{storage.class} - Storage driver loaded.")
+      @logger.info("#{adapter.class} - Adapter driver loaded.")
+      bots.each { |bot| @logger.info("Loading #{bot}.") }
 
+      Thread.abort_on_exception = true
       @threads << Thread.start { loop { @timers.wait } }
       @threads << Thread.start { adapter.run(@bots) }
       @threads.each { |th| th.join }
     end
 
     def stop
-      adapter.stop if adapter.respond_to?(:stop)
+      adapter.close if adapter.respond_to?(:close)
       @threads.each { |th| th.kill if th }
     end
 

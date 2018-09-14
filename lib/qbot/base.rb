@@ -1,5 +1,5 @@
-require 'parse-cron'
 require 'dotenv/load'
+require 'parse-cron'
 
 require 'qbot/app'
 require 'qbot/adapter'
@@ -23,14 +23,10 @@ module Qbot
       end
 
       def usage(text)
-        on(/^#{prefix}help\s+#{name.downcase}\b/) { post(text) }
+        on(/^help\s+#{name.downcase}\b/) { post(text) }
       end
 
       private
-      def prefix
-        "#{ENV['QBOT_PREFIX']}\s+" if ENV['QBOT_PREFIX']
-      end
-
       def schedule(pattern, &block)
         parser  = CronParser.new(pattern)
         current = Time.now
@@ -51,9 +47,19 @@ module Qbot
 
     def call(message)
       @message = message
+
+      if prefix = ENV['QBOT_PREFIX']
+        return unless /^#{prefix}\s+(.*)/ =~ @message.text
+        @message.text = $1.to_s
+      end
       return unless @pattern =~ @message.text.to_s.strip
 
-      instance_exec($~, &@callback)
+      begin
+        Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
+        instance_exec($~, &@callback)
+      rescue => e
+        Qbot.app.logger.error("#{self.class} - Error handling message: #{e}")
+      end
     end
 
     def post(text, **options)

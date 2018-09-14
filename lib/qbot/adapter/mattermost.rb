@@ -12,7 +12,6 @@ module Qbot
       def initialize(url: nil, username: nil, password: nil)
         @mm_url = url || ENV['QBOT_MATTERMOST_URL']
         @server = URI.join(@mm_url, '/').to_s
-        @error  = false
 
         resp = api_call(:post, '/users/login', :body => {
           login_id: username || ENV['QBOT_MATTERMOST_USERNAME'],
@@ -20,47 +19,24 @@ module Qbot
         })
 
         access_token(resp.headers['token'])
+        raise 'Login failed' unless @token
       end
 
       def access_token(token)
         @token = token
       end
 
-      def on_message(&block)
-        ws_url = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
-        headers = { "Authorization" => "Bearer #{@token}" }
-
-        EM.run do
-          @ws = Faye::WebSocket::Client.new(ws_url, {}, { headers: headers, ping: 60})
-
-          @ws.on :open do |e|
-            Qbot.app.logger.info("#{self.class} - Websocket connection opened")
-          end
-
-          @ws.on :close do |e|
-            Qbot.app.logger.info("#{self.class} - Websocket connection closed")
-            stop if @error
-            on_message(&block) # restart
-          end
-
-          @ws.on :error do |e|
-            Qbot.app.logger.error("#{self.class} - #{e.message}")
-            @error = true
-          end
-
-          @ws.on :message do |e|
-            data = JSON.parse(e.data)
-            emit_event(data, block)
-          end
-        end
+      def listen(&block)
+        EM.run { start_connection(&block) }
       end
 
-      def stop
+      def close
         EM.stop
       end
 
       def post(text, **options)
-        api_call(:post, "/posts", body: options.merge(message: text))
+        resp = api_call(:post, "/posts", body: options.merge(message: text))
+        Qbot.app.logger.info("#{self.class} - Post message: #{resp.status} - '#{text}'")
       end
 
       def reply_to(message, text, **options)
@@ -82,27 +58,54 @@ module Qbot
         URI(@mm_url).path + "/api/v4#{path}"
       end
 
-      def emit_event(data, callback)
-        event = data['event'].to_sym
-        Qbot.app.logger.debug("#{self.class} - Event '#{event}' recieved")
+      def start_connection(&block)
+        running = true
+        ws_url  = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
 
-        case event
-        when :posted
+        ws = Faye::WebSocket::Client.new(ws_url)
+        ws.send({seq: 1, action: 'authentication_challenge', data: {token: @token}}.to_json)
+
+        ws.on :message do |e|
+          data = JSON.parse(e.data)
+          emit_event(data, block)
+        end
+
+        ws.on :open do |e|
+          Qbot.app.logger.info("#{self.class} - Websocket connection opened")
+        end
+
+        ws.on :close do |e|
+          Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
+          if running then start_connection(&block) else Qbot.app.stop end
+        end
+
+        ws.on :error do |e|
+          Qbot.app.logger.error("#{self.class} - Websocket encountered error: #{e.message}")
+          running = false
+        end
+      end
+
+      def emit_event(data, callback)
+        return unless type = data['event']
+        Qbot.app.logger.debug("#{self.class} - Event '#{type}' recieved")
+
+        case type
+        when 'posted'
           post = JSON.parse(data['data']['post'])
 
           message = Qbot::Message.new
           message.data = post
           message.text = post['message']
 
-          Qbot.app.logger.info("#{self.class} - Message was '#{message.text}'")
           callback.call(message)
         end
+      rescue => err
+        Qbot.app.logger.error("#{self.class} - ERROR! #{err}")
       end
 
       def api_call(method, path, **options, &block)
         headers = { "Authorization" => "Bearer #{@token}", "Accept" => "application/json" }
-
-        connection = Faraday::Connection.new(url: @server, headers: headers ) do |con|
+        connection = Faraday::Connection.new(url: @server, headers: headers) do |con|
           con.response :json
           con.adapter  :httpclient
         end

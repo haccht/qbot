@@ -27,8 +27,12 @@ module Qbot
         end
       end
 
-      def on_message(&block)
+      def listen(&block)
         EM.run { EM.open_keyboard(Keyboard, block) }
+      end
+
+      def close
+        EM.stop
       end
 
       def post(text, **options)

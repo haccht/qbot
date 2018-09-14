@@ -19,12 +19,12 @@ module Qbot
       end
 
       def run(bots)
-        on_message do |message|
+        listen do |message|
           bots.each { |bot| bot.call(message.dup) }
         end
       end
 
-      def on_message(&block)
+      def listen(&block)
         raise 'Not implemented'
       end
 

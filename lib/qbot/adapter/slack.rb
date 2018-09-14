@@ -13,7 +13,6 @@ module Qbot
 
       def initialize(api_token: nil)
         @server = URI.join(SLACK_API_URL, '/').to_s
-        @error  = false
 
         access_token(api_token || ENV['QBOT_SLACK_API_TOKEN'])
       end
@@ -22,42 +21,17 @@ module Qbot
         @token = token
       end
 
-      def on_message(&block)
-        resp = api_call(:get, '/rtm.start')
-        data = JSON.parse(resp.body)
-        ws_url = data['url']
-
-        EM.run do
-          @ws = Faye::WebSocket::Client.new(ws_url, {}, { ping: 60})
-
-          @ws.on :open do |e|
-            Qbot.app.logger.info("#{self.class} - Websocket connection opened")
-          end
-
-          @ws.on :close do |e|
-            Qbot.app.logger.info("#{self.class} - Websocket connection closed")
-            stop if @error
-            on_message(&block) # restart
-          end
-
-          @ws.on :error do |e|
-            Qbot.app.logger.error("#{self.class} - #{e.message}")
-            @error = true
-          end
-
-          @ws.on :message do |e|
-            data = JSON.parse(e.data)
-            emit_event(data, block)
-          end
-        end
+      def listen(&block)
+        EM.run { start_connection(&block) }
       end
 
-      def stop
+      def close
         EM.stop
       end
 
       def post(text, **options)
-        api_call(:post, "/chat.postMessage", options.merge(text: text))
+        resp = api_call(:post, "/chat.postMessage", options.merge(text: text))
+        Qbot.app.logger.info("#{self.class} - Post message: #{resp.status} - '#{text}'")
       end
 
       def reply_to(message, text, **options)
@@ -79,19 +53,46 @@ module Qbot
         URI(SLACK_API_URL).path + path
       end
 
-      def emit_event(data, callback)
-        event = data['type'].to_sym
-        Qbot.app.logger.debug("#{self.class} - Event '#{event}' recieved")
+      def start_connection(&block)
+        resp = api_call(:get, '/rtm.start')
+        data = JSON.parse(resp.body)
 
-        case event
-        when :message
+        running = true
+        ws_url  = data['url']
+        ws = Faye::WebSocket::Client.new(ws_url, nil, {ping: 60})
+
+        ws.on :message do |e|
+          data = JSON.parse(e.data)
+          emit_event(data, block)
+        end
+
+        ws.on :open do |e|
+          Qbot.app.logger.info("#{self.class} - Websocket connection opened")
+        end
+
+        ws.on :close do |e|
+          Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
+          if running then start_connection(&block) else Qbot.app.stop end
+        end
+
+        ws.on :error do |e|
+          Qbot.app.logger.error("#{self.class} - Websocket encountered error: #{e.message}")
+          running = false
+        end
+      end
+
+      def emit_event(data, callback)
+        return unless type = data['event']
+        Qbot.app.logger.debug("#{self.class} - Event '#{type}' recieved")
+
+        case type
+        when 'message'
           return if data['subtype']
 
           message = Qbot::Message.new
           message.data = data
           message.text = data['text']
 
-          Qbot.app.logger.info("#{self.class} - Message was '#{message.text}'")
           callback.call(message)
         end
       end
