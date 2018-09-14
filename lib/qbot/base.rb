@@ -49,7 +49,7 @@ module Qbot
         Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
         instance_exec($~, &@callback)
       rescue => e
-        Qbot.app.logger.error("#{self.class} - Error handling message: #{e}")
+        Qbot.app.logger.error("#{self.class} - Error: #{e}")
       end
     end
 
