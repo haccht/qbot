@@ -22,10 +22,6 @@ module Qbot
         schedule(pattern, &block)
       end
 
-      def usage(text)
-        on(/^help\s+#{name.downcase}\b/) { post(text) }
-      end
-
       private
       def schedule(pattern, &block)
         parser  = CronParser.new(pattern)
@@ -47,11 +43,6 @@ module Qbot
 
     def call(message)
       @message = message
-
-      if prefix = ENV['QBOT_PREFIX']
-        return unless /^#{prefix}\s+(.*)/ =~ @message.text
-        @message.text = $1.to_s
-      end
       return unless @pattern =~ @message.text.to_s.strip
 
       begin

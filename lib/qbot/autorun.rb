@@ -1,5 +1,3 @@
-require 'qbot/embed/help'
-
 module Qbot
 
   def self.autorun
