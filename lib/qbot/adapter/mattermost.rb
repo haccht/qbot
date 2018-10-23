@@ -62,7 +62,7 @@ module Qbot
         running = true
         ws_url  = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
 
-        ws = Faye::WebSocket::Client.new(ws_url)
+        ws = Faye::WebSocket::Client.new(ws_url, nil, {ping: 60})
         ws.send({seq: 1, action: 'authentication_challenge', data: {token: @token}}.to_json)
 
         ws.on :message do |e|
