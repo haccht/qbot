@@ -18,9 +18,9 @@ module Qbot
         def receive_line(text)
           exit 0 if text.strip == 'exit'
 
-          message = Qbot::Message.new
-          message.data = text
+          message = Qbot::Message.new(text)
           message.text = text
+          message.mention(/^\s*bot\b/)
 
           @callback.call(message)
           $stdout.print ">> "

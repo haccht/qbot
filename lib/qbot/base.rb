@@ -13,9 +13,9 @@ module Qbot
 
     class << self
 
-      def on(pattern, &block)
-        pattern = Regexp.new(pattern.to_s) unless Regexp === pattern
-        Qbot.app.add(new(pattern, &block))
+      def on(pattern, **options, &block)
+        pattern = Regexp.new("\b#{pattern}\b") unless Regexp === pattern
+        Qbot.app.add(new(pattern, **options, &block))
       end
 
       def cron(pattern, &block)
@@ -36,21 +36,21 @@ module Qbot
 
     end
 
-    def initialize(pattern, &block)
+    def initialize(pattern, **options, &block)
       @pattern  = pattern
+      @options  = options
       @callback = block
     end
 
-    def call(message)
-      @message = message
-      return unless @pattern =~ @message.text.to_s.strip
+    def listen(message)
+      return unless @options[:global] || !message.mentioned?
+      return unless @pattern =~ message.text.to_s.strip
+      Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
 
-      begin
-        Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
-        instance_exec($~, &@callback)
-      rescue => e
-        Qbot.app.logger.error("#{self.class} - Error: #{e}")
-      end
+      @message = message
+      instance_exec($~, &@callback)
+    rescue => e
+      Qbot.app.logger.error("#{self.class} - Error: #{e}")
     end
 
     def post(text, **options)

@@ -35,15 +35,11 @@ module Qbot
       @bots << bot
     end
 
-    def bots
-      @bots.map { |bot| bot.class.name }.uniq
-    end
-
     def start
       @logger.info("Booting #{self.class}.")
       @logger.info("#{storage.class} - Storage driver loaded.")
       @logger.info("#{adapter.class} - Adapter driver loaded.")
-      bots.each { |bot| @logger.info("Loading #{bot}.") }
+      @bots.map { |bot| bot.class.name }.uniq.each { |bot| @logger.info("#{bot} loaded.") }
 
       Thread.abort_on_exception = true
       @threads << Thread.start { loop { @timers.wait } }

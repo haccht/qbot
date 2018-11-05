@@ -12,9 +12,9 @@ module Qbot
       SLACK_API_URL = 'https://slack.com/api'
 
       def initialize(api_token: nil)
-        @server = URI.join(SLACK_API_URL, '/').to_s
-
         access_token(api_token || ENV['QBOT_SLACK_API_TOKEN'])
+        @server = URI.join(SLACK_API_URL, '/').to_s
+        @bot_id = me['user_id']
       end
 
       def access_token(token)
@@ -72,7 +72,12 @@ module Qbot
 
         ws.on :close do |e|
           Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
-          if running then start_connection(&block) else Qbot.app.stop end
+          if running
+            sleep 3
+            start_connection(&block)
+          else
+            Qbot.app.stop
+          end
         end
 
         ws.on :error do |e|
@@ -89,9 +94,9 @@ module Qbot
         when 'message'
           return if data['subtype']
 
-          message = Qbot::Message.new
-          message.data = data
+          message = Qbot::Message.new(data)
           message.text = data['text']
+          message.mention(/^\s*<@#{@bot_id}>/)
 
           callback.call(message)
         end

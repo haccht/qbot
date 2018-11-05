@@ -20,6 +20,8 @@ module Qbot
 
         access_token(resp.headers['token'])
         raise 'Login failed' unless @token
+
+        @bot_id = me['id']
       end
 
       def access_token(token)
@@ -76,7 +78,12 @@ module Qbot
 
         ws.on :close do |e|
           Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
-          if running then start_connection(&block) else Qbot.app.stop end
+          if running
+            sleep 3
+            start_connection(&block)
+          else
+            Qbot.app.stop
+          end
         end
 
         ws.on :error do |e|
@@ -91,11 +98,11 @@ module Qbot
 
         case type
         when 'posted'
-          post = JSON.parse(data['data']['post'])
+          data = JSON.parse(data['data']['post'])
 
-          message = Qbot::Message.new
-          message.data = post
-          message.text = post['message']
+          message = Qbot::Message.new(data)
+          message.text = data['message']
+          message.mention(/^\s*<#{@bot_id}>/)
 
           callback.call(message)
         end
