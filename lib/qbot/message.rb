@@ -3,12 +3,18 @@ module Qbot
 
   class Message
 
-    attr_reader :data
+    attr_reader :data, :mention
     attr_accessor :text
 
     def initialize(data, text = nil)
       @data = data
       @text = text
+    end
+
+    def initialize_copy(obj)
+      @data    = obj.data
+      @text    = obj.text
+      @mention = obj.mention
     end
 
     def mention(regexp = nil)
