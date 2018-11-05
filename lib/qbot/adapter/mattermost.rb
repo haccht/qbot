@@ -21,7 +21,7 @@ module Qbot
         access_token(resp.headers['token'])
         raise 'Login failed' unless @token
 
-        @bot_id = me['id']
+        @bot_id = me['username']
       end
 
       def access_token(token)
@@ -102,12 +102,12 @@ module Qbot
 
           message = Qbot::Message.new(data)
           message.text = data['message']
-          message.mention(/^\s*<#{@bot_id}>/)
+          message.mention(/^\s*@#{@bot_id}\b/)
 
           callback.call(message)
         end
       rescue => err
-        Qbot.app.logger.error("#{self.class} - ERROR! #{err}")
+        Qbot.app.logger.error("#{self.class} - ERROR: #{err}")
       end
 
       def api_call(method, path, **options, &block)

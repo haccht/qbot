@@ -3,6 +3,7 @@ module Qbot
 
   class Message
 
+    attr_reader :data
     attr_accessor :text
 
     def initialize(data, text = nil)
@@ -11,7 +12,7 @@ module Qbot
     end
 
     def mention(regexp = nil)
-      return @mention_proc = lambda { @text.delete!(regexp) } if regexp
+      return @mention_proc = lambda { @text.slice!(regexp) } if regexp
 
       @mention ||= @mention_proc.call if @mention_proc
       @mention

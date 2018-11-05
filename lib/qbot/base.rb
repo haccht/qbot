@@ -44,7 +44,7 @@ module Qbot
     end
 
     def listen(message)
-      return unless @options[:global] || !message.mentioned?
+      return unless @options[:global] || message.mentioned?
       return unless @pattern =~ message.text.to_s.strip
       Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
 
