@@ -44,8 +44,13 @@ module Qbot
     end
 
     def listen(message)
-      return unless @options[:global] || message.mentioned?
-      return unless @pattern =~ message.text.to_s.strip
+      if @options[:global]
+        return unless @pattern =~ message.text.strip
+      else
+        return unless message.mentioned?
+        return unless @pattern =~ message.text.sub(/^#{message.mention}/, '').strip
+      end
+
       Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
 
       @message = message
