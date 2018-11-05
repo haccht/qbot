@@ -2,6 +2,7 @@ require 'dotenv/load'
 require 'parse-cron'
 
 require 'qbot/app'
+require 'qbot/message'
 require 'qbot/adapter'
 require 'qbot/adapter/shell'
 require 'qbot/storage'
