@@ -60,7 +60,7 @@ module Qbot
     end
 
     def post(text, **options)
-      Qbot.app.adapter.reply_to(@message, text, **options)
+      Qbot.app.adapter.post(text, reply_to: @message, **options)
     end
 
     def cache

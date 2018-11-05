@@ -30,10 +30,6 @@ module Qbot
         raise 'Not implemented'
       end
 
-      def reply_to(message, text, **options)
-        raise 'Not implemented'
-      end
-
     end
 
   end

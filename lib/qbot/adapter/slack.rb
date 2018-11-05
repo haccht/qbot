@@ -30,22 +30,19 @@ module Qbot
       end
 
       def post(text, **options)
-        resp = api_call(:post, "/chat.postMessage", options.merge(text: text))
-        Qbot.app.logger.info("#{self.class} - Post message: #{resp.status} - '#{text}'")
-      end
-
-      def reply_to(message, text, **options)
         if options[:channel_id]
-          channel_id = options[:channel_id]
+          options[:channel] = options.delete(:channel_id)
         elsif options[:channel_name]
-          channel = channel(options[:channel_name])
-          channel_id = channel['id'] if channel
+          channel = channel(options.delete(:channel_name))
+          options[:channel] = channel['id'] if channel
+        elsif options[:reply_to]
+          message = options.delete(:reply_to)
+          options[:channel] = message.data['channel']
         end
 
-        channel_id ||= message.data['channel'] if message
-        return unless channel_id
-
-        post(text, **options.merge(channel: channel_id))
+        return unless options[:channel]
+        Qbot.app.logger.info("#{self.class} - Post message: '#{text}'")
+        api_call(:post, "/chat.postMessage", options.merge(text: text))
       end
 
       private
