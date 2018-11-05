@@ -87,7 +87,7 @@ module Qbot
       end
 
       def emit_event(data, callback)
-        return unless type = data['event']
+        return unless type = data['type']
         Qbot.app.logger.debug("#{self.class} - Event '#{type}' recieved")
 
         case type
