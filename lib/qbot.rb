@@ -1,4 +1,5 @@
 require 'qbot/base'
+require 'qbot/embed/help'
 require 'qbot/autorun'
 
 module Qbot

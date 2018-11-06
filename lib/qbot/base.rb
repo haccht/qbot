@@ -2,7 +2,6 @@ require 'dotenv/load'
 require 'parse-cron'
 
 require 'qbot/app'
-require 'qbot/message'
 require 'qbot/adapter'
 require 'qbot/adapter/shell'
 require 'qbot/storage'
@@ -16,11 +15,15 @@ module Qbot
 
       def on(pattern, **options, &block)
         pattern = Regexp.new("\b#{pattern}\b") unless Regexp === pattern
-        Qbot.app.add(new(pattern, **options, &block))
+        Qbot.app.add_bot(new(pattern, **options, &block))
       end
 
       def cron(pattern, &block)
         schedule(pattern, &block)
+      end
+
+      def help(usages)
+        Qbot.app.help_text(usages)
       end
 
       private
@@ -45,16 +48,16 @@ module Qbot
 
     def listen(message)
       if @options[:global]
-        return unless @pattern =~ message.text.strip
+        return unless message.match(@pattern)
       else
         return unless message.mentioned?
-        return unless @pattern =~ message.text.sub(/^#{message.mention}/, '').strip
+        return unless message.match(@pattern, prefix: message.mention)
       end
 
       Qbot.app.logger.debug("#{self.class} - Recieve message: '#{message.text}'")
 
       @message = message
-      instance_exec($~, &@callback)
+      instance_exec(@message, &@callback)
     rescue => e
       Qbot.app.logger.error("#{self.class} - Error: #{e}")
     end
