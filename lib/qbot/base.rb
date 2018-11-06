@@ -16,7 +16,7 @@ module Qbot
       def on(pattern, **options, &block)
         pattern  = Regexp.new("\b#{pattern}\b") unless Regexp === pattern
         instance = new(pattern, **options, &block)
-        Qbot.app.add(instance)
+        Qbot.app.add_bot(instance)
       end
 
       def cron(pattern, &block)
