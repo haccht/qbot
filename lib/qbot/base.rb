@@ -15,8 +15,9 @@ module Qbot
     class << self
 
       def on(pattern, **options, &block)
-        pattern = Regexp.new("\b#{pattern}\b") unless Regexp === pattern
-        Qbot.app.add(new(pattern, **options, &block))
+        pattern  = Regexp.new("\b#{pattern}\b") unless Regexp === pattern
+        instance = new(pattern, **options, &block)
+        Qbot.app.add(instance)
       end
 
       def cron(pattern, &block)
@@ -30,7 +31,13 @@ module Qbot
         delay   = parser.next(current) - current
 
         Qbot.app.timers.after(delay) do
-          new(pattern).instance_eval(&block)
+          begin
+            instance = new(pattern)
+            instance.instance_eval(&block)
+          rescue => e
+            Qbot.app.logger.error("#{instance.class} - Error: #{e}")
+          end
+
           schedule(pattern, &block)
         end
       end
