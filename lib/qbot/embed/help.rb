@@ -6,11 +6,10 @@ module Qbot
 
     on /^help\b/i do |msg|
       usage = Qbot.app.help_text
-      width = usage.keys.map(&:length).max
 
       text = StringIO.new
       text.puts 'Usage:'
-      text.puts usage.map { |key, val| "`#{key}`".ljust(width + 3) + "- #{usage[key]}" }
+      text.puts usage.map { |key, val| "`#{key}` - #{usage[key]}" }
       post text.string.chomp
     end
 
