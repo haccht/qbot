@@ -1,3 +1,5 @@
+require 'qbot/message'
+
 module Qbot
 
   module Adapter

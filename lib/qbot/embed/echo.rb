@@ -2,14 +2,10 @@ module Qbot
 
   class Echo < Qbot::Base
 
+    help "echo <text>" => "Echo back the given <text>."
     on /^echo( .+)$/ do |msg|
-      post msg[1].strip
+      post msg.captures[1].strip
     end
-
-    usage <<~EOL
-    Usage:
-      `echo <text>` - Reflect the given <text>.
-    EOL
 
   end
 

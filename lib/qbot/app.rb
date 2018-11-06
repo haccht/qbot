@@ -26,13 +26,18 @@ module Qbot
 
     def initialize
       @bots    = []
+      @help    = {}
       @threads = []
       @timers  = Timers::Group.new
       @logger  = Logger.new(STDOUT)
     end
 
-    def add(bot)
+    def add_bot(bot)
       @bots << bot
+    end
+
+    def help_text(usages = {})
+      @help.update(usages)
     end
 
     def start

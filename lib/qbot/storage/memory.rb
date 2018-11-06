@@ -9,7 +9,7 @@ module Qbot
       end
 
       def namespace(ns)
-        @db[ns]
+        @db[ns] ||= {}
       end
 
     end

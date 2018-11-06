@@ -36,7 +36,6 @@ module Qbot
       end
 
       def post(text, **options)
-        Qbot.app.logger.info("#{self.class} - Post message: '#{text}'")
         $stdout.puts text
       end
 
