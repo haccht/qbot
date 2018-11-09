@@ -5,7 +5,10 @@ module Qbot
       exit if $!
 
       %i{INT TERM}.each do |signal|
-        Signal.trap(signal) { exit }
+        Signal.trap(signal) do
+          Qbot.app.stop
+          exit
+        end
       end
 
       Qbot.run!(ARGV)

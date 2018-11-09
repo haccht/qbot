@@ -26,7 +26,7 @@ module Qbot
       end
 
       def close
-        EM.stop
+        EM.stop_event_loop
       end
 
       def post(text, **options)
@@ -54,7 +54,6 @@ module Qbot
         resp = api_call(:get, '/rtm.start')
         data = JSON.parse(resp.body)
 
-        running = true
         ws_url  = data['url']
         ws = Faye::WebSocket::Client.new(ws_url, nil, {ping: 60})
 
@@ -69,17 +68,12 @@ module Qbot
 
         ws.on :close do |e|
           Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
-          if running
-            sleep 3
-            start_connection(&block)
-          else
-            Qbot.app.stop
-          end
+          sleep 30
+          start_connection(&block)
         end
 
         ws.on :error do |e|
           Qbot.app.logger.error("#{self.class} - Websocket encountered error: #{e.message}")
-          running = false
         end
       end
 

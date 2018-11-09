@@ -58,7 +58,6 @@ module Qbot
       end
 
       def start_connection(&block)
-        running = true
         ws_url  = URI.join(@server.gsub(/^http(s?):/, 'ws\1:'), endpoint('/websocket')).to_s
 
         ws = Faye::WebSocket::Client.new(ws_url, nil, {ping: 60})
@@ -75,17 +74,12 @@ module Qbot
 
         ws.on :close do |e|
           Qbot.app.logger.info("#{self.class} - Websocket connection closed: #{e.code} #{e.reason}")
-          if running
-            sleep 3
-            start_connection(&block)
-          else
-            Qbot.app.stop
-          end
+          sleep 30
+          start_connection(&block)
         end
 
         ws.on :error do |e|
           Qbot.app.logger.error("#{self.class} - Websocket encountered error: #{e.message}")
-          running = false
         end
       end
 
